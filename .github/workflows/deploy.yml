@@ -47,7 +47,7 @@ jobs:
             cat > /opt/jamla/.env << EOF
             API_ID=${{ secrets.API_ID }}
             API_HASH=${{ secrets.API_HASH }}
-            BOT_TOKEN=${{ secrets.BOT_TOKEN }}
+            BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             SESSION_STRING=${{ secrets.SESSION_STRING }}
             DATABASE_PATH=/opt/jamla/data/jamla.db
             LOG_LEVEL=INFO
