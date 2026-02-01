@@ -31,11 +31,14 @@ jobs:
             cd /opt/jamla
 
             # Clone or pull
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/SardorOga/jamla.git .
-            else
+            if [ -d ".git" ]; then
               git fetch origin
               git reset --hard origin/main
+            else
+              # Remove existing files and clone fresh
+              rm -rf /opt/jamla/*
+              rm -rf /opt/jamla/.[!.]*
+              git clone https://github.com/SardorOga/jamla.git .
             fi
 
             # Setup virtual environment
