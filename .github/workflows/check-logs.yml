@@ -1,0 +1,28 @@
+name: Check Logs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check bot logs
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            echo "=== Service Status ==="
+            systemctl status jamla --no-pager || true
+
+            echo ""
+            echo "=== Recent Logs ==="
+            journalctl -u jamla -n 100 --no-pager || true
+
+            echo ""
+            echo "=== Database Info ==="
+            sqlite3 /opt/jamla/data/jamla.db "SELECT * FROM users;" 2>/dev/null || echo "No users"
+            sqlite3 /opt/jamla/data/jamla.db "SELECT * FROM channels;" 2>/dev/null || echo "No channels"
+            sqlite3 /opt/jamla/data/jamla.db "SELECT * FROM user_channels;" 2>/dev/null || echo "No user_channels"
