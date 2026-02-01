@@ -15,10 +15,16 @@ jobs:
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SESSION_STRING: ${{ secrets.SESSION_STRING }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
+          envs: API_ID,API_HASH,BOT_TOKEN,SESSION_STRING
           script: |
             set -e
 
@@ -35,7 +41,6 @@ jobs:
               git fetch origin
               git reset --hard origin/main
             else
-              # Remove existing files and clone fresh
               rm -rf /opt/jamla/*
               rm -rf /opt/jamla/.[!.]*
               git clone https://github.com/SardorOga/jamla.git .
@@ -47,17 +52,15 @@ jobs:
             pip install telethon cryptg -q
 
             # Create .env file
-            cat > /opt/jamla/.env << EOF
-            API_ID=${{ secrets.API_ID }}
-            API_HASH=${{ secrets.API_HASH }}
-            BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-            SESSION_STRING=${{ secrets.SESSION_STRING }}
-            DATABASE_PATH=/opt/jamla/data/jamla.db
-            LOG_LEVEL=INFO
-            EOF
+            echo "API_ID=${API_ID}" > /opt/jamla/.env
+            echo "API_HASH=${API_HASH}" >> /opt/jamla/.env
+            echo "BOT_TOKEN=${BOT_TOKEN}" >> /opt/jamla/.env
+            echo "SESSION_STRING=${SESSION_STRING}" >> /opt/jamla/.env
+            echo "DATABASE_PATH=/opt/jamla/data/jamla.db" >> /opt/jamla/.env
+            echo "LOG_LEVEL=INFO" >> /opt/jamla/.env
 
             # Create systemd service
-            cat > /etc/systemd/system/jamla.service << EOF
+            cat > /etc/systemd/system/jamla.service << 'SERVICEEOF'
             [Unit]
             Description=Jamla Telegram Bot
             After=network.target
@@ -73,13 +76,15 @@ jobs:
 
             [Install]
             WantedBy=multi-user.target
-            EOF
+            SERVICEEOF
 
             # Restart service
             systemctl daemon-reload
             systemctl enable jamla
             systemctl restart jamla
 
-            sleep 3
+            sleep 5
             echo "=== Deploy completed ==="
             systemctl status jamla --no-pager || true
+            echo "=== Recent logs ==="
+            journalctl -u jamla -n 50 --no-pager || true
