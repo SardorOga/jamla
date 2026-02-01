@@ -64,6 +64,15 @@ class JamlaBot:
         await self.bot.start(bot_token=self.config.BOT_TOKEN)
         await self.userbot.start()
 
+        # Debug: Check who we're logged in as
+        bot_me = await self.bot.get_me()
+        user_me = await self.userbot.get_me()
+        logger.info(f"Bot: @{bot_me.username} (id={bot_me.id}, is_bot={bot_me.bot})")
+        logger.info(f"Userbot: @{user_me.username} (id={user_me.id}, is_bot={user_me.bot})")
+
+        if user_me.bot:
+            logger.error("❌ USERBOT IS A BOT! SESSION_STRING is wrong. Need user account session.")
+
         logger.info("Telegram clients connected")
 
         # Setup handlers
