@@ -2,7 +2,8 @@ import logging
 import asyncio
 from telethon import TelegramClient, events
 from telethon.tl.types import Channel
-from telethon.errors import ChannelPrivateError, UsernameNotOccupiedError, FloodWaitError
+from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.errors import ChannelPrivateError, UsernameNotOccupiedError, FloodWaitError, UserAlreadyParticipantError
 
 from .database import Database
 from .config import get_message
@@ -22,6 +23,14 @@ class ChannelWatcher:
         """Start watching all subscribed channels."""
         channels = self.db.get_all_channels()
         for channel in channels:
+            # Ensure userbot is a member of the channel
+            try:
+                await self.client(JoinChannelRequest(channel["channel_username"]))
+            except UserAlreadyParticipantError:
+                pass
+            except Exception as e:
+                logger.warning(f"Could not join @{channel['channel_username']}: {e}")
+
             await self._add_channel_handler(channel["channel_id"])
         logger.info(f"Started watching {len(channels)} channels")
 
@@ -73,6 +82,15 @@ class ChannelWatcher:
         channel_info = await self.resolve_channel(channel_username)
         if not channel_info:
             return False, "channel_not_found"
+
+        # Join the channel with userbot to receive messages
+        try:
+            await self.client(JoinChannelRequest(channel_info["username"]))
+            logger.info(f"Joined channel @{channel_info['username']}")
+        except UserAlreadyParticipantError:
+            pass  # Already a member
+        except Exception as e:
+            logger.warning(f"Could not join channel @{channel_info['username']}: {e}")
 
         # Add to database
         channel_db_id = self.db.add_channel(
