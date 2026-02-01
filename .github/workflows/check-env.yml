@@ -1,0 +1,30 @@
+name: Check Env
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check env file
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            echo "=== SESSION_STRING length ==="
+            cat /opt/jamla/.env | grep SESSION_STRING | cut -d= -f2 | wc -c
+
+            echo ""
+            echo "=== First 20 chars of SESSION_STRING ==="
+            cat /opt/jamla/.env | grep SESSION_STRING | cut -d= -f2 | cut -c1-20
+
+            echo ""
+            echo "=== Check if contains colon (bot token sign) ==="
+            if cat /opt/jamla/.env | grep SESSION_STRING | grep -q ":"; then
+              echo "❌ SESSION_STRING contains ':' - looks like BOT TOKEN!"
+            else
+              echo "✅ No colon found"
+            fi
